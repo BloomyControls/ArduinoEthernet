@@ -34,8 +34,8 @@
 /* Start EthernetUDP socket, listening at local port PORT */
 uint8_t EthernetUDP::begin(uint16_t port)
 {
-	if (sockindex < MAX_SOCK_NUM) Ethernet.socketClose(sockindex);
-	sockindex = Ethernet.socketBegin(SnMR::UDP, port);
+	if (sockindex < MAX_SOCK_NUM) _ethernet.socketClose(sockindex);
+	sockindex = _ethernet.socketBegin(SnMR::UDP, port);
 	if (sockindex >= MAX_SOCK_NUM) return 0;
 	_port = port;
 	_remaining = 0;
@@ -53,7 +53,7 @@ int EthernetUDP::available()
 void EthernetUDP::stop()
 {
 	if (sockindex < MAX_SOCK_NUM) {
-		Ethernet.socketClose(sockindex);
+		_ethernet.socketClose(sockindex);
 		sockindex = MAX_SOCK_NUM;
 	}
 }
@@ -62,10 +62,10 @@ int EthernetUDP::beginPacket(const char *host, uint16_t port)
 {
 	// Look up the host first
 	int ret = 0;
-	DNSClient dns;
+	DNSClient dns(_ethernet);
 	IPAddress remote_addr;
 
-	dns.begin(Ethernet.dnsServerIP());
+	dns.begin(_ethernet.dnsServerIP());
 	ret = dns.getHostByName(host, remote_addr);
 	if (ret != 1) return ret;
 	return beginPacket(remote_addr, port);
@@ -75,12 +75,12 @@ int EthernetUDP::beginPacket(IPAddress ip, uint16_t port)
 {
 	_offset = 0;
 	//Serial.printf("UDP beginPacket\n");
-	return Ethernet.socketStartUDP(sockindex, rawIPAddress(ip), port);
+	return _ethernet.socketStartUDP(sockindex, rawIPAddress(ip), port);
 }
 
 int EthernetUDP::endPacket()
 {
-	return Ethernet.socketSendUDP(sockindex);
+	return _ethernet.socketSendUDP(sockindex);
 }
 
 size_t EthernetUDP::write(uint8_t byte)
@@ -91,7 +91,7 @@ size_t EthernetUDP::write(uint8_t byte)
 size_t EthernetUDP::write(const uint8_t *buffer, size_t size)
 {
 	//Serial.printf("UDP write %d\n", size);
-	uint16_t bytes_written = Ethernet.socketBufferData(sockindex, _offset, buffer, size);
+	uint16_t bytes_written = _ethernet.socketBufferData(sockindex, _offset, buffer, size);
 	_offset += bytes_written;
 	return bytes_written;
 }
@@ -106,12 +106,12 @@ int EthernetUDP::parsePacket()
 		read((uint8_t *)NULL, _remaining);
 	}
 
-	if (Ethernet.socketRecvAvailable(sockindex) > 0) {
+	if (_ethernet.socketRecvAvailable(sockindex) > 0) {
 		//HACK - hand-parse the UDP packet using TCP recv method
 		uint8_t tmpBuf[8];
 		int ret=0;
 		//read 8 header bytes and get IP and port from it
-		ret = Ethernet.socketRecv(sockindex, tmpBuf, 8);
+		ret = _ethernet.socketRecv(sockindex, tmpBuf, 8);
 		if (ret > 0) {
 			_remoteIP = tmpBuf;
 			_remotePort = tmpBuf[4];
@@ -132,7 +132,7 @@ int EthernetUDP::read()
 {
 	uint8_t byte;
 
-	if ((_remaining > 0) && (Ethernet.socketRecv(sockindex, &byte, 1) > 0)) {
+	if ((_remaining > 0) && (_ethernet.socketRecv(sockindex, &byte, 1) > 0)) {
 		// We read things without any problems
 		_remaining--;
 		return byte;
@@ -148,11 +148,11 @@ int EthernetUDP::read(unsigned char *buffer, size_t len)
 		int got;
 		if (_remaining <= len) {
 			// data should fit in the buffer
-			got = Ethernet.socketRecv(sockindex, buffer, _remaining);
+			got = _ethernet.socketRecv(sockindex, buffer, _remaining);
 		} else {
 			// too much data for the buffer,
 			// grab as much as will fit
-			got = Ethernet.socketRecv(sockindex, buffer, len);
+			got = _ethernet.socketRecv(sockindex, buffer, len);
 		}
 		if (got > 0) {
 			_remaining -= got;
@@ -170,7 +170,7 @@ int EthernetUDP::peek()
 	// If the user hasn't called parsePacket yet then return nothing otherwise they
 	// may get the UDP header
 	if (sockindex >= MAX_SOCK_NUM || _remaining == 0) return -1;
-	return Ethernet.socketPeek(sockindex);
+	return _ethernet.socketPeek(sockindex);
 }
 
 void EthernetUDP::flush()
@@ -181,10 +181,11 @@ void EthernetUDP::flush()
 /* Start EthernetUDP socket, listening at local port PORT */
 uint8_t EthernetUDP::beginMulticast(IPAddress ip, uint16_t port)
 {
-	if (sockindex < MAX_SOCK_NUM) Ethernet.socketClose(sockindex);
-	sockindex = Ethernet.socketBeginMulticast(SnMR::UDP | SnMR::MULTI, ip, port);
+	if (sockindex < MAX_SOCK_NUM) _ethernet.socketClose(sockindex);
+	sockindex = _ethernet.socketBeginMulticast(SnMR::UDP | SnMR::MULTI, ip, port);
 	if (sockindex >= MAX_SOCK_NUM) return 0;
 	_port = port;
 	_remaining = 0;
 	return 1;
 }
+/* vim: set noet sw=8: */

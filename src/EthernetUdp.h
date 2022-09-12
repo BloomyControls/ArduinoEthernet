@@ -36,3 +36,4 @@
 
 #include "Ethernet.h"
 
+/* vim: set noet sw=8: */

@@ -10,6 +10,8 @@
 class DNSClient
 {
 public:
+	DNSClient(Ethernet& ethernet) : ethernet(ethernet), iUdp(ethernet) {};
+
 	void begin(const IPAddress& aDNSServer);
 
 	/** Convert a numeric IP address string into a four-byte IP address.
@@ -34,7 +36,9 @@ protected:
 
 	IPAddress iDNSServer;
 	uint16_t iRequestId;
+	Ethernet& ethernet;
 	EthernetUDP iUdp;
 };
 
 #endif
+/* vim: set noet sw=8: */

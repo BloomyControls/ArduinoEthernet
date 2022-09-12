@@ -135,3 +135,4 @@ typedef struct _RIP_MSG_FIXED
 } RIP_MSG_FIXED;
 
 #endif
+/* vim: set noet sw=8: */

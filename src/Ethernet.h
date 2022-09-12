@@ -49,9 +49,11 @@
 
 
 #include <Arduino.h>
+#include <SPI.h>
 #include "Client.h"
 #include "Server.h"
 #include "Udp.h"
+#include "utility/w5100.h"
 
 enum EthernetLinkStatus {
 	Unknown,
@@ -73,29 +75,36 @@ class DhcpClass;
 
 class EthernetClass {
 private:
-	static IPAddress _dnsServerAddress;
-	static DhcpClass* _dhcp;
+	IPAddress _dnsServerAddress;
+	DhcpClass* _dhcp;
+	arduino::SPIClass& _spibus;
+	uint8_t _sspin;
+	W5100 _w5100;
 public:
+	EthernetClass(arduino::SPIClass& spibus, uint8_t sspin);
+
+	~EthernetClass();
+
 	// Initialise the Ethernet shield to use the provided MAC address and
 	// gain the rest of the configuration through DHCP.
 	// Returns 0 if the DHCP configuration failed, and 1 if it succeeded
-	static int begin(uint8_t *mac, unsigned long timeout = 60000, unsigned long responseTimeout = 4000);
-	static int maintain();
-	static EthernetLinkStatus linkStatus();
-	static EthernetHardwareStatus hardwareStatus();
+	int begin(uint8_t *mac, unsigned long timeout = 60000, unsigned long responseTimeout = 4000);
+	int maintain();
+	EthernetLinkStatus linkStatus();
+	EthernetHardwareStatus hardwareStatus();
 
 	// Manual configuration
-	static void begin(uint8_t *mac, IPAddress ip);
-	static void begin(uint8_t *mac, IPAddress ip, IPAddress dns);
-	static void begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway);
-	static void begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet);
-	static void init(uint8_t sspin = 10);
+	void begin(uint8_t *mac, IPAddress ip);
+	void begin(uint8_t *mac, IPAddress ip, IPAddress dns);
+	void begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway);
+	void begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet);
+	//void init(uint8_t sspin = 10);
 
-	static void MACAddress(uint8_t *mac_address);
-	static IPAddress localIP();
-	static IPAddress subnetMask();
-	static IPAddress gatewayIP();
-	static IPAddress dnsServerIP() { return _dnsServerAddress; }
+	void MACAddress(uint8_t *mac_address);
+	IPAddress localIP();
+	IPAddress subnetMask();
+	IPAddress gatewayIP();
+	IPAddress dnsServerIP() { return _dnsServerAddress; }
 
 	void setMACAddress(const uint8_t *mac_address);
 	void setLocalIP(const IPAddress local_ip);
@@ -110,41 +119,50 @@ public:
 	friend class EthernetUDP;
 private:
 	// Opens a socket(TCP or UDP or IP_RAW mode)
-	static uint8_t socketBegin(uint8_t protocol, uint16_t port);
-	static uint8_t socketBeginMulticast(uint8_t protocol, IPAddress ip,uint16_t port);
-	static uint8_t socketStatus(uint8_t s);
+	uint8_t socketBegin(uint8_t protocol, uint16_t port);
+	uint8_t socketBeginMulticast(uint8_t protocol, IPAddress ip,uint16_t port);
+	uint8_t socketStatus(uint8_t s);
 	// Close socket
-	static void socketClose(uint8_t s);
+	void socketClose(uint8_t s);
 	// Establish TCP connection (Active connection)
-	static void socketConnect(uint8_t s, uint8_t * addr, uint16_t port);
+	void socketConnect(uint8_t s, uint8_t * addr, uint16_t port);
 	// disconnect the connection
-	static void socketDisconnect(uint8_t s);
+	void socketDisconnect(uint8_t s);
 	// Establish TCP connection (Passive connection)
-	static uint8_t socketListen(uint8_t s);
+	uint8_t socketListen(uint8_t s);
 	// Send data (TCP)
-	static uint16_t socketSend(uint8_t s, const uint8_t * buf, uint16_t len);
-	static uint16_t socketSendAvailable(uint8_t s);
+	uint16_t socketSend(uint8_t s, const uint8_t * buf, uint16_t len);
+	uint16_t socketSendAvailable(uint8_t s);
 	// Receive data (TCP)
-	static int socketRecv(uint8_t s, uint8_t * buf, int16_t len);
-	static uint16_t socketRecvAvailable(uint8_t s);
-	static uint8_t socketPeek(uint8_t s);
+	int socketRecv(uint8_t s, uint8_t * buf, int16_t len);
+	uint16_t socketRecvAvailable(uint8_t s);
+	uint8_t socketPeek(uint8_t s);
 	// sets up a UDP datagram, the data for which will be provided by one
 	// or more calls to bufferData and then finally sent with sendUDP.
 	// return true if the datagram was successfully set up, or false if there was an error
-	static bool socketStartUDP(uint8_t s, uint8_t* addr, uint16_t port);
+	bool socketStartUDP(uint8_t s, uint8_t* addr, uint16_t port);
 	// copy up to len bytes of data from buf into a UDP datagram to be
 	// sent later by sendUDP.  Allows datagrams to be built up from a series of bufferData calls.
 	// return Number of bytes successfully buffered
-	static uint16_t socketBufferData(uint8_t s, uint16_t offset, const uint8_t* buf, uint16_t len);
+	uint16_t socketBufferData(uint8_t s, uint16_t offset, const uint8_t* buf, uint16_t len);
 	// Send a UDP datagram built up from a sequence of startUDP followed by one or more
 	// calls to bufferData.
 	// return true if the datagram was successfully sent, or false if there was an error
-	static bool socketSendUDP(uint8_t s);
+	bool socketSendUDP(uint8_t s);
 	// Initialize the "random" source port number
-	static void socketPortRand(uint16_t n);
+	void socketPortRand(uint16_t n);
+
+private:
+	// functions moved from static in socket.cpp to members of this class
+	uint16_t getSnTX_FSR(uint8_t s);
+	uint16_t getSnRX_RSR(uint8_t s);
+	void write_data(uint8_t s, uint16_t offset, const uint8_t *data, uint16_t len);
+	void read_data(uint8_t s, uint16_t src, uint8_t *dst, uint16_t len);
 };
 
-extern EthernetClass Ethernet;
+typedef EthernetClass Ethernet;
+
+//extern EthernetClass Ethernet;
 
 
 #define UDP_TX_PACKET_MAX_SIZE 24
@@ -157,11 +175,13 @@ private:
 	uint16_t _offset; // offset into the packet being sent
 
 protected:
+	Ethernet& _ethernet;
 	uint8_t sockindex;
 	uint16_t _remaining; // remaining bytes of incoming packet yet to be processed
 
 public:
-	EthernetUDP() : sockindex(MAX_SOCK_NUM) {}  // Constructor
+	EthernetUDP(Ethernet& ethernet)
+	    : _ethernet(ethernet), sockindex(MAX_SOCK_NUM) {}  // Constructor
 	virtual uint8_t begin(uint16_t);      // initialize, start listening on specified port. Returns 1 if successful, 0 if there are no sockets available to use
 	virtual uint8_t beginMulticast(IPAddress, uint16_t);  // initialize, start listening on specified port. Returns 1 if successful, 0 if there are no sockets available to use
 	virtual void stop();  // Finish with the UDP socket
@@ -213,8 +233,10 @@ public:
 
 class EthernetClient : public Client {
 public:
-	EthernetClient() : _sockindex(MAX_SOCK_NUM), _timeout(1000) { }
-	EthernetClient(uint8_t s) : _sockindex(s), _timeout(1000) { }
+	EthernetClient(Ethernet& ethernet)
+	    : _ethernet(ethernet), _sockindex(MAX_SOCK_NUM), _timeout(1000) { }
+	EthernetClient(Ethernet& ethernet, uint8_t s)
+	    : _ethernet(ethernet), _sockindex(s), _timeout(1000) { }
 	virtual ~EthernetClient() {};
 
 	uint8_t status();
@@ -246,6 +268,7 @@ public:
 	using Print::write;
 
 private:
+	Ethernet& _ethernet;
 	uint8_t _sockindex; // MAX_SOCK_NUM means client not in use
 	uint16_t _timeout;
 };
@@ -253,9 +276,11 @@ private:
 
 class EthernetServer : public Server {
 private:
+	Ethernet& _ethernet;
 	uint16_t _port;
 public:
-	EthernetServer(uint16_t port) : _port(port) { }
+	EthernetServer(Ethernet& ethernet, uint16_t port)
+	    : _ethernet(ethernet), _port(port) { }
 	EthernetClient available();
 	EthernetClient accept();
 	virtual void begin();
@@ -296,6 +321,7 @@ private:
 	unsigned long _responseTimeout;
 	unsigned long _lastCheckLeaseMillis;
 	uint8_t _dhcp_state;
+	Ethernet& _ethernet;
 	EthernetUDP _dhcpUdpSocket;
 
 	int request_DHCP_lease();
@@ -306,6 +332,9 @@ private:
 
 	uint8_t parseDHCPResponse(unsigned long responseTimeout, uint32_t& transactionId);
 public:
+	DhcpClass(Ethernet& ethernet)
+	    : _ethernet(ethernet), _dhcpUdpSocket(_ethernet) {}
+
 	IPAddress getLocalIp();
 	IPAddress getSubnetMask();
 	IPAddress getGatewayIp();
@@ -321,3 +350,4 @@ public:
 
 
 #endif
+/* vim: set noet sw=8: */

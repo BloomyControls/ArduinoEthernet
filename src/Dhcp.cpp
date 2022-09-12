@@ -431,3 +431,4 @@ void DhcpClass::printByte(char * buf, uint8_t n )
 		*str-- = c < 10 ? c + '0' : c + 'A' - 10;
 	} while(n);
 }
+/* vim: set noet sw=8: */
