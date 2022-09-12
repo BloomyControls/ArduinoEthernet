@@ -22,13 +22,14 @@
 #include "Ethernet.h"
 #include "utility/w5100.h"
 
-uint16_t EthernetServer::server_port[MAX_SOCK_NUM];
+//uint16_t EthernetServer::server_port[MAX_SOCK_NUM];
 
 
 void EthernetServer::begin()
 {
 	uint8_t sockindex = _ethernet.socketBegin(SnMR::TCP, _port);
 	if (sockindex < MAX_SOCK_NUM) {
+		server_port[sockindex] = 0;
 		if (_ethernet.socketListen(sockindex)) {
 			server_port[sockindex] = _port;
 		} else {

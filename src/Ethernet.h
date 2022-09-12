@@ -68,6 +68,13 @@ enum EthernetHardwareStatus {
 	EthernetW5500
 };
 
+typedef struct {
+	uint16_t RX_RSR; // Number of bytes received
+	uint16_t RX_RD;  // Address to read
+	uint16_t TX_FSR; // Free space ready for transmit
+	uint8_t  RX_inc; // how much have we advanced RX_RD
+} socketstate_t;
+
 class EthernetUDP;
 class EthernetClient;
 class EthernetServer;
@@ -80,6 +87,7 @@ private:
 	arduino::SPIClass& _spibus;
 	uint8_t _sspin;
 	W5100 _w5100;
+	socketstate_t _state[MAX_SOCK_NUM];
 public:
 	EthernetClass(arduino::SPIClass& spibus, uint8_t sspin);
 
@@ -280,7 +288,7 @@ private:
 	uint16_t _port;
 public:
 	EthernetServer(Ethernet& ethernet, uint16_t port)
-	    : _ethernet(ethernet), _port(port) { }
+	    : _ethernet(ethernet), _port(port), server_port{} { }
 	EthernetClient available();
 	EthernetClient accept();
 	virtual void begin();
@@ -290,8 +298,8 @@ public:
 	using Print::write;
 	//void statusreport();
 
-	// TODO: make private when socket allocation moves to EthernetClass
-	static uint16_t server_port[MAX_SOCK_NUM];
+private:
+	uint16_t server_port[MAX_SOCK_NUM];
 };
 
 

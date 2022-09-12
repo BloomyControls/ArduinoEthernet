@@ -31,6 +31,7 @@ extern void yield(void);
 // TODO: randomize this when not using DHCP, but how?
 static uint16_t local_port = 49152;  // 49152 to 65535
 
+#if 0
 typedef struct {
 	uint16_t RX_RSR; // Number of bytes received
 	uint16_t RX_RD;  // Address to read
@@ -39,6 +40,7 @@ typedef struct {
 } socketstate_t;
 
 static socketstate_t state[MAX_SOCK_NUM];
+#endif
 
 
 
@@ -96,7 +98,7 @@ closemakesocket:
 	_w5100.execCmdSn(s, Sock_CLOSE);
 makesocket:
 	//Serial.printf("W5000socket %d\n", s);
-	EthernetServer::server_port[s] = 0;
+	//_server_port[s] = 0;
 	delayMicroseconds(250); // TODO: is this needed??
 	_w5100.writeSnMR(s, protocol);
 	_w5100.writeSnIR(s, 0xFF);
@@ -108,11 +110,11 @@ makesocket:
 		_w5100.writeSnPORT(s, local_port);
 	}
 	_w5100.execCmdSn(s, Sock_OPEN);
-	state[s].RX_RSR = 0;
-	state[s].RX_RD  = _w5100.readSnRX_RD(s); // always zero?
-	state[s].RX_inc = 0;
-	state[s].TX_FSR = 0;
-	//Serial.printf("W5000socket prot=%d, RX_RD=%d\n", _w5100.readSnMR(s), state[s].RX_RD);
+	_state[s].RX_RSR = 0;
+	_state[s].RX_RD  = _w5100.readSnRX_RD(s); // always zero?
+	_state[s].RX_inc = 0;
+	_state[s].TX_FSR = 0;
+	//Serial.printf("W5000socket prot=%d, RX_RD=%d\n", _w5100.readSnMR(s), _state[s].RX_RD);
 	_spibus.endTransaction();
 	return s;
 }
@@ -160,7 +162,7 @@ closemakesocket:
 	_w5100.execCmdSn(s, Sock_CLOSE);
 makesocket:
 	//Serial.printf("W5000socket %d\n", s);
-	EthernetServer::server_port[s] = 0;
+	//_server_port[s] = 0;
 	delayMicroseconds(250); // TODO: is this needed??
 	_w5100.writeSnMR(s, protocol);
 	_w5100.writeSnIR(s, 0xFF);
@@ -180,11 +182,11 @@ makesocket:
     	_w5100.writeSnDPORT(s, port);
     	_w5100.writeSnDHAR(s, mac);
 	_w5100.execCmdSn(s, Sock_OPEN);
-	state[s].RX_RSR = 0;
-	state[s].RX_RD  = _w5100.readSnRX_RD(s); // always zero?
-	state[s].RX_inc = 0;
-	state[s].TX_FSR = 0;
-	//Serial.printf("W5000socket prot=%d, RX_RD=%d\n", _w5100.readSnMR(s), state[s].RX_RD);
+	_state[s].RX_RSR = 0;
+	_state[s].RX_RD  = _w5100.readSnRX_RD(s); // always zero?
+	_state[s].RX_inc = 0;
+	_state[s].TX_FSR = 0;
+	//Serial.printf("W5000socket prot=%d, RX_RD=%d\n", _w5100.readSnMR(s), _state[s].RX_RD);
 	_spibus.endTransaction();
 	return s;
 }
@@ -298,13 +300,13 @@ void EthernetClass::read_data(uint8_t s, uint16_t src, uint8_t *dst, uint16_t le
 int EthernetClass::socketRecv(uint8_t s, uint8_t *buf, int16_t len)
 {
 	// Check how much data is available
-	int ret = state[s].RX_RSR;
+	int ret = _state[s].RX_RSR;
 	_spibus.beginTransaction(SPI_ETHERNET_SETTINGS);
 	if (ret < len) {
 		uint16_t rsr = getSnRX_RSR(s);
-		ret = rsr - state[s].RX_inc;
-		state[s].RX_RSR = ret;
-		//Serial.printf("Sock_RECV, RX_RSR=%d, RX_inc=%d\n", ret, state[s].RX_inc);
+		ret = rsr - _state[s].RX_inc;
+		_state[s].RX_RSR = ret;
+		//Serial.printf("Sock_RECV, RX_RSR=%d, RX_inc=%d\n", ret, _state[s].RX_inc);
 	}
 	if (ret == 0) {
 		// No data available.
@@ -312,7 +314,7 @@ int EthernetClass::socketRecv(uint8_t s, uint8_t *buf, int16_t len)
 		if ( status == SnSR::LISTEN || status == SnSR::CLOSED ||
 		  status == SnSR::CLOSE_WAIT ) {
 			// The remote end has closed its side of the connection,
-			// so this is the eof state
+			// so this is the eof _state
 			ret = 0;
 		} else {
 			// The connection is still up, but there's no data waiting to be read
@@ -320,20 +322,20 @@ int EthernetClass::socketRecv(uint8_t s, uint8_t *buf, int16_t len)
 		}
 	} else {
 		if (ret > len) ret = len; // more data available than buffer length
-		uint16_t ptr = state[s].RX_RD;
+		uint16_t ptr = _state[s].RX_RD;
 		if (buf) read_data(s, ptr, buf, ret);
 		ptr += ret;
-		state[s].RX_RD = ptr;
-		state[s].RX_RSR -= ret;
-		uint16_t inc = state[s].RX_inc + ret;
-		if (inc >= 250 || state[s].RX_RSR == 0) {
-			state[s].RX_inc = 0;
+		_state[s].RX_RD = ptr;
+		_state[s].RX_RSR -= ret;
+		uint16_t inc = _state[s].RX_inc + ret;
+		if (inc >= 250 || _state[s].RX_RSR == 0) {
+			_state[s].RX_inc = 0;
 			_w5100.writeSnRX_RD(s, ptr);
 			_w5100.execCmdSn(s, Sock_RECV);
 			//Serial.printf("Sock_RECV cmd, RX_RD=%d, RX_RSR=%d\n",
-			//  state[s].RX_RD, state[s].RX_RSR);
+			//  _state[s].RX_RD, _state[s].RX_RSR);
 		} else {
-			state[s].RX_inc = inc;
+			_state[s].RX_inc = inc;
 		}
 	}
 	_spibus.endTransaction();
@@ -343,13 +345,13 @@ int EthernetClass::socketRecv(uint8_t s, uint8_t *buf, int16_t len)
 
 uint16_t EthernetClass::socketRecvAvailable(uint8_t s)
 {
-	uint16_t ret = state[s].RX_RSR;
+	uint16_t ret = _state[s].RX_RSR;
 	if (ret == 0) {
 		_spibus.beginTransaction(SPI_ETHERNET_SETTINGS);
 		uint16_t rsr = getSnRX_RSR(s);
 		_spibus.endTransaction();
-		ret = rsr - state[s].RX_inc;
-		state[s].RX_RSR = ret;
+		ret = rsr - _state[s].RX_inc;
+		_state[s].RX_RSR = ret;
 		//Serial.printf("sockRecvAvailable s=%d, RX_RSR=%d\n", s, ret);
 	}
 	return ret;
@@ -361,7 +363,7 @@ uint8_t EthernetClass::socketPeek(uint8_t s)
 {
 	uint8_t b;
 	_spibus.beginTransaction(SPI_ETHERNET_SETTINGS);
-	uint16_t ptr = state[s].RX_RD;
+	uint16_t ptr = _state[s].RX_RD;
 	_w5100.read((ptr & _w5100.SMASK) + _w5100.RBASE(s), &b, 1);
 	_spibus.endTransaction();
 	return b;
@@ -381,7 +383,7 @@ uint16_t EthernetClass::getSnTX_FSR(uint8_t s)
         while (1) {
                 val = _w5100.readSnTX_FSR(s);
                 if (val == prev) {
-			state[s].TX_FSR = val;
+			_state[s].TX_FSR = val;
 			return val;
 		}
                 prev = val;

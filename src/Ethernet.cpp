@@ -29,7 +29,8 @@ EthernetClass::EthernetClass(arduino::SPIClass& spibus, uint8_t sspin)
 	  _dhcp{nullptr},
 	  _spibus(spibus),
 	  _sspin(sspin),
-	  _w5100(_spibus, _sspin) {}
+	  _w5100(_spibus, _sspin),
+	  _state{} {}
 
 EthernetClass::~EthernetClass() {
 	if (_dhcp) {
