@@ -80,7 +80,13 @@ int EthernetUDP::beginPacket(IPAddress ip, uint16_t port)
 
 int EthernetUDP::endPacket()
 {
-	return _ethernet.socketSendUDP(sockindex);
+	bool result = _ethernet.socketSendUDP(sockindex);
+	if (!result && _ethernet._udp_send_error) {
+		stop();
+		_ethernet._w5100.reset();
+		begin(_port);
+	}
+	return result;
 }
 
 size_t EthernetUDP::write(uint8_t byte)

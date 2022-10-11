@@ -507,16 +507,29 @@ bool EthernetClass::socketStartUDP(uint8_t s, uint8_t* addr, uint16_t port)
 
 bool EthernetClass::socketSendUDP(uint8_t s)
 {
+	_udp_send_error = false;
 	_spibus.beginTransaction(SPI_ETHERNET_SETTINGS);
 	_w5100.execCmdSn(s, Sock_SEND);
 
-	/* +2008.01 bj */
+	/* +2022.10 wre: copied 2018.11 fil solution for loop counter */
+	uint32_t count{};
+	uint8_t status{};
 	while ( (_w5100.readSnIR(s) & SnIR::SEND_OK) != SnIR::SEND_OK ) {
-		if (_w5100.readSnIR(s) & SnIR::TIMEOUT) {
+		count++;
+		status = _w5100.readSnIR(s);
+		if (status & SnIR::TIMEOUT) {
 			/* +2008.01 [bj]: clear interrupt */
 			_w5100.writeSnIR(s, (SnIR::SEND_OK|SnIR::TIMEOUT));
 			_spibus.endTransaction();
 			//Serial.printf("sendUDP timeout\n");
+			return false;
+		}
+		/* +2022.10 wre: fix bug with W5x00 as originally implemented by
+		 * Fred Larsen in 2018. */
+		if (count > 100000) {
+			_udp_send_error = true;
+			_w5100.writeSnIR(s, SnIR::SEND_OK);
+			_spibus.endTransaction();
 			return false;
 		}
 		_spibus.endTransaction();

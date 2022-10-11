@@ -88,6 +88,7 @@ private:
 	uint8_t _sspin;
 	W5100 _w5100;
 	socketstate_t _state[MAX_SOCK_NUM];
+	bool _udp_send_error;
 public:
 	EthernetClass(arduino::SPIClass& spibus, uint8_t sspin);
 

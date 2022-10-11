@@ -83,6 +83,25 @@ W5100Class::W5100Class(arduino::SPIClass& spibus, uint8_t sspin)
 #endif
 }
 
+// Credit to Fred Larsen for this function
+void W5100Class::reset(void) {
+	// Get the current configuration
+	uint8_t gw[4], sn[4], mac[8], ip[4];
+	getGatewayIp(gw);
+	getSubnetMask(sn);
+	getMACAddress(mac);
+	getIPAddress(ip);
+
+	_initialized = false;
+	softReset();
+	init();
+
+	setGatewayIp(gw);
+	setSubnetMask(sn);
+	setMACAddress(mac);
+	setIPAddress(ip);
+}
+
 uint8_t W5100Class::init(void)
 {
 	uint8_t i;

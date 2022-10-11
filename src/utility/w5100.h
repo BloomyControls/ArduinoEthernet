@@ -132,6 +132,7 @@ public:
   W5100Class(arduino::SPIClass& spibus, uint8_t sspin);
 
   uint8_t init(void);
+  void reset(void);
 
   inline void setGatewayIp(const uint8_t * addr) { writeGAR(addr); }
   inline void getGatewayIp(uint8_t * addr) { readGAR(addr); }

@@ -30,7 +30,8 @@ EthernetClass::EthernetClass(arduino::SPIClass& spibus, uint8_t sspin)
 	  _spibus(spibus),
 	  _sspin(sspin),
 	  _w5100(_spibus, _sspin),
-	  _state{} {}
+	  _state{},
+	  _udp_send_error{false} {}
 
 EthernetClass::~EthernetClass() {
 	if (_dhcp) {
