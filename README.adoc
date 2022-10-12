@@ -1,16 +1,18 @@
-:repository-owner: arduino-libraries
-:repository-name: Ethernet
+:repository-owner: BloomyControls
+:repository-name: BloomyEthernet
 
 = {repository-name} Library for Arduino =
 
-image:https://github.com/{repository-owner}/{repository-name}/actions/workflows/check-arduino.yml/badge.svg["Check Arduino status", link="https://github.com/{repository-owner}/{repository-name}/actions/workflows/check-arduino.yml"]
-image:https://github.com/{repository-owner}/{repository-name}/actions/workflows/compile-examples.yml/badge.svg["Compile Examples status", link="https://github.com/{repository-owner}/{repository-name}/actions/workflows/compile-examples.yml"]
-image:https://github.com/{repository-owner}/{repository-name}/actions/workflows/spell-check.yml/badge.svg["Spell Check status", link="https://github.com/{repository-owner}/{repository-name}/actions/workflows/spell-check.yml"]
+This is a fork of the official Arduino Ethernet library. This fork makes minor
+tweaks to fix a few bugs. It also changes the Ethernet library interface such
+that the user specifies the SPI bus and chip select to use, allowing multiple
+instances or more control in general. The tweaks also make it more thread safe
+and avoid globals, meaning that multi-core devices may use multiple instances to
+control multiple Ethernet controllers safely.
 
-With the Arduino Ethernet Shield, this library allows an Arduino board to connect to the internet.
-
-For more information about this library please visit us at
-https://www.arduino.cc/en/Reference/{repository-name}
+This fork is NOT intended to contribute upstream. It is not compatible with the
+official Ethernet library, so when you include BloomyEthernet.h, you must not
+also include Ethernet.h!
 
 == License ==
 
