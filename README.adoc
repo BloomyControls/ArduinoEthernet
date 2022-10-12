@@ -14,6 +14,12 @@ This fork is NOT intended to contribute upstream. It is not compatible with the
 official Ethernet library, so when you include BloomyEthernet.h, you must not
 also include Ethernet.h!
 
+== Installation ==
+
+Download the master branch of this repository and put it in your Arduino
+libraries folder, found in your sketchbook. Make sure the directory is called
+BloomyEthernet and not BloomyEthernet-master!
+
 == License ==
 
 Copyright (c) 2010 Arduino LLC. All right reserved.
