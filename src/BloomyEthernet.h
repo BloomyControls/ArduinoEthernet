@@ -18,8 +18,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef ethernet_h_
-#define ethernet_h_
+#ifdef ethernet_h_
+#error "BloomyEthernet.h cannot be included alongside Ethernet.h!"
+#endif
+
+#ifndef bloomyethernet_h_
+#define bloomyethernet_h_
 
 // All symbols exposed to Arduino sketches are contained in this header file
 //
@@ -353,10 +357,6 @@ public:
 	int beginWithDHCP(uint8_t *, unsigned long timeout = 60000, unsigned long responseTimeout = 4000);
 	int checkLease();
 };
-
-
-
-
 
 #endif
 /* vim: set noet sw=8: */

@@ -29,9 +29,7 @@
 
 
 // Require Ethernet.h, because we need MAX_SOCK_NUM
-#ifndef ethernet_h_
-#error "Ethernet.h must be included before w5100.h"
-#endif
+#include "../BloomyEthernet.h"
 
 
 // Arduino 101's SPI can not run faster than 8 MHz.

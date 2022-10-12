@@ -20,7 +20,7 @@
 
 #include <Arduino.h>
 #include <SPI.h>
-#include "Ethernet.h"
+#include "BloomyEthernet.h"
 #include "utility/w5100.h"
 #include "Dhcp.h"
 
